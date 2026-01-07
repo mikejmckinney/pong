@@ -342,6 +342,8 @@ function showMenu(menuId) {
 function showGame() {
     document.querySelectorAll('.menu').forEach(m => m.classList.remove('active'));
     document.getElementById('game-screen').classList.add('active');
+    // Ensure canvas is properly sized after becoming visible
+    resizeCanvas();
     
     // Show touch controls on mobile
     if ('ontouchstart' in window) {
