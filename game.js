@@ -66,7 +66,7 @@ class SoundEngine {
         oscillator.type = 'square';
         
         gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
         
         oscillator.start(this.audioContext.currentTime);
         oscillator.stop(this.audioContext.currentTime + duration);
@@ -472,8 +472,13 @@ function resizeCanvas() {
         canvasHeight = canvasWidth / aspectRatio;
     }
     
+    // Set internal canvas resolution
     game.canvas.width = game.width;
     game.canvas.height = game.height;
+    
+    // Scale canvas display size via CSS
+    game.canvas.style.width = canvasWidth + 'px';
+    game.canvas.style.height = canvasHeight + 'px';
 }
 
 function startGame(mode, gameMode) {
