@@ -1,3 +1,12 @@
+// Game Constants
+const GAME_CONSTANTS = {
+    POWERUP_LIFETIME: 300, // frames
+    POWERUP_SPAWN_CHANCE: 0.2,
+    POWERUP_MAX_COUNT: 1,
+    TOUCH_SENSITIVITY: 0.5,
+    ONLINE_CONNECTION_DELAY: 1000 // ms
+};
+
 // Game State
 const game = {
     canvas: null,
@@ -172,7 +181,7 @@ class Ball {
         soundEngine.paddleHit();
         
         // Spawn power-up occasionally in powerup mode
-        if (game.gameMode === 'powerup' && Math.random() < 0.2 && game.powerUps.length < 1) {
+        if (game.gameMode === 'powerup' && Math.random() < GAME_CONSTANTS.POWERUP_SPAWN_CHANCE && game.powerUps.length < GAME_CONSTANTS.POWERUP_MAX_COUNT) {
             game.powerUps.push(new PowerUp());
         }
     }
@@ -263,7 +272,7 @@ class PowerUp {
         this.radius = 12;
         this.type = ['speed', 'size', 'slow'][Math.floor(Math.random() * 3)];
         this.color = '#ff9500';
-        this.lifetime = 300; // frames
+        this.lifetime = GAME_CONSTANTS.POWERUP_LIFETIME;
     }
     
     update() {
@@ -564,7 +573,7 @@ function setupControls() {
         // Update paddle position
         const paddle = player === 'player1' ? game.paddle1 : game.paddle2;
         const deltaY = touch.clientY - game.touches[player].startY;
-        paddle.targetY += deltaY * 0.5;
+        paddle.targetY += deltaY * GAME_CONSTANTS.TOUCH_SENSITIVITY;
         game.touches[player].startY = touch.clientY;
     }
     
@@ -790,13 +799,13 @@ function joinRoom() {
     `;
     
     // In a real implementation, this would connect to a WebSocket server
-    // For now, show a message
+    // For now, show a message with simulated delay
     setTimeout(() => {
         document.getElementById('room-status').innerHTML = `
             <p style="color: var(--neon-orange);">Online multiplayer requires a WebSocket server.</p>
             <p style="color: var(--neon-purple); margin-top: 0.5rem;">Try Local Multiplayer instead!</p>
         `;
-    }, 1000);
+    }, GAME_CONSTANTS.ONLINE_CONNECTION_DELAY);
 }
 
 // Initialize on load
