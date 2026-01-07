@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pong - Retro Arcade Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Main Menu -->
+        <div id="main-menu" class="menu active">
+            <h1 class="game-title">PONG</h1>
+            <div class="menu-buttons">
+                <button class="menu-btn" data-mode="single">Single Player</button>
+                <button class="menu-btn" data-mode="local">Local Multiplayer</button>
+                <button class="menu-btn" data-mode="online">Online Multiplayer</button>
+                <button class="menu-btn" id="leaderboard-btn">Leaderboard</button>
+                <button class="menu-btn" id="settings-btn">Settings</button>
+            </div>
+        </div>
+
+        <!-- Game Mode Menu -->
+        <div id="mode-menu" class="menu">
+            <h2>Select Game Mode</h2>
+            <div class="menu-buttons">
+                <button class="menu-btn mode-btn" data-gamemode="classic">Classic</button>
+                <button class="menu-btn mode-btn" data-gamemode="speed">Speed Mode</button>
+                <button class="menu-btn mode-btn" data-gamemode="powerup">Power-up Mode</button>
+                <button class="menu-btn mode-btn" data-gamemode="reverse">Reverse Controls</button>
+                <button class="menu-btn back-btn">Back</button>
+            </div>
+        </div>
+
+        <!-- Online Menu -->
+        <div id="online-menu" class="menu">
+            <h2>Online Multiplayer</h2>
+            <div class="online-section">
+                <input type="text" id="room-code" placeholder="Enter Room Code" maxlength="6">
+                <button class="menu-btn" id="join-room-btn">Join Room</button>
+                <button class="menu-btn" id="create-room-btn">Create Room</button>
+                <div id="room-status"></div>
+            </div>
+            <button class="menu-btn back-btn">Back</button>
+        </div>
+
+        <!-- Leaderboard Menu -->
+        <div id="leaderboard-menu" class="menu">
+            <h2>Leaderboard</h2>
+            <div class="leaderboard-tabs">
+                <button class="tab-btn active" data-tab="local">Local</button>
+                <button class="tab-btn" data-tab="global">Global</button>
+            </div>
+            <div id="leaderboard-content">
+                <div id="local-leaderboard" class="leaderboard-list active"></div>
+                <div id="global-leaderboard" class="leaderboard-list"></div>
+            </div>
+            <button class="menu-btn back-btn">Back</button>
+        </div>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu" class="menu">
+            <h2>Settings</h2>
+            <div class="settings-section">
+                <div class="setting-item">
+                    <label>Sound Effects</label>
+                    <input type="checkbox" id="sound-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label>Music</label>
+                    <input type="checkbox" id="music-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label>Difficulty</label>
+                    <select id="difficulty-select">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+            <button class="menu-btn back-btn">Back</button>
+        </div>
+
+        <!-- Game Canvas -->
+        <div id="game-screen">
+            <canvas id="game-canvas"></canvas>
+            <div id="game-hud">
+                <div class="score" id="player1-score">0</div>
+                <div id="game-info"></div>
+                <div class="score" id="player2-score">0</div>
+            </div>
+            <div id="power-up-indicator"></div>
+            <button id="pause-btn" class="game-control-btn">⏸</button>
+        </div>
+
+        <!-- Touch Controls -->
+        <div id="touch-controls">
+            <div class="touch-zone" id="left-touch" data-player="1">
+                <div class="touch-indicator">P1</div>
+            </div>
+            <div class="touch-zone" id="right-touch" data-player="2">
+                <div class="touch-indicator">P2</div>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="menu">
+            <h2>Paused</h2>
+            <div class="menu-buttons">
+                <button class="menu-btn" id="resume-btn">Resume</button>
+                <button class="menu-btn" id="restart-btn">Restart</button>
+                <button class="menu-btn" id="quit-btn">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over" class="menu">
+            <h2 id="game-over-title">Game Over</h2>
+            <div id="game-over-stats"></div>
+            <div id="name-entry" style="display: none;">
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="10">
+                <button class="menu-btn" id="submit-score-btn">Submit Score</button>
+            </div>
+            <div class="menu-buttons">
+                <button class="menu-btn" id="play-again-btn">Play Again</button>
+                <button class="menu-btn" id="menu-btn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
