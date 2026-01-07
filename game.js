@@ -418,13 +418,33 @@ function gameLoop() {
     game.ctx.setLineDash([]);
     
     // Update and draw game objects
-    game.ball.update();
-    game.paddle1.update();
-    game.paddle2.update();
-    
+    if (game.mode === 'online' && !game.isHost) {
+        // Guest: do not simulate locally; state comes from host
+    } else {
+        game.ball.update();
+        game.paddle1.update();
+        game.paddle2.update();
+    }
+
+    // Draw current state
     game.ball.draw();
     game.paddle1.draw();
     game.paddle2.draw();
+
+    // Host: broadcast state to guest
+    if (game.mode === 'online' && game.isHost && game.socket && game.socket.readyState === 1) {
+        try {
+            game.socket.send(JSON.stringify({
+                type: 'state',
+                roomCode: game.roomCode,
+                state: {
+                    ball: { x: game.ball.x, y: game.ball.y },
+                    paddles: { p1: { y: game.paddle1.y }, p2: { y: game.paddle2.y } },
+                    scores: { s1: game.score1, s2: game.score2 }
+                }
+            }));
+        } catch (e) { /* ignore send errors */ }
+    }
     
     // Update power-ups
     if (game.gameMode === 'powerup') {
@@ -539,15 +559,25 @@ function setupControls() {
     // Update paddle positions based on keys
     function updateKeyboardControls() {
         if (!game.running || game.paused) return;
-        
-        // Player 1 controls (W/S)
-        if (keys['w'] || keys['W']) game.paddle1.moveUp();
-        if (keys['s'] || keys['S']) game.paddle1.moveDown();
-        
-        // Player 2 controls (Arrow keys) - only in local multiplayer
-        if (game.mode === 'local') {
-            if (keys['ArrowUp']) game.paddle2.moveUp();
-            if (keys['ArrowDown']) game.paddle2.moveDown();
+
+        // Online guest: send inputs to host instead of local movement
+        if (game.mode === 'online' && !game.isHost && game.socket && game.socket.readyState === 1) {
+            if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+                try { game.socket.send(JSON.stringify({ type: 'input', roomCode: game.roomCode, input: 'up' })); } catch (e) {}
+            }
+            if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+                try { game.socket.send(JSON.stringify({ type: 'input', roomCode: game.roomCode, input: 'down' })); } catch (e) {}
+            }
+        } else {
+            // Player 1 controls (W/S and Arrow keys when not in local)
+            if (keys['w'] || keys['W'] || (game.mode !== 'local' && keys['ArrowUp'])) game.paddle1.moveUp();
+            if (keys['s'] || keys['S'] || (game.mode !== 'local' && keys['ArrowDown'])) game.paddle1.moveDown();
+
+            // Player 2 controls (Arrow keys) - only in local multiplayer
+            if (game.mode === 'local') {
+                if (keys['ArrowUp']) game.paddle2.moveUp();
+                if (keys['ArrowDown']) game.paddle2.moveDown();
+            }
         }
         
         requestAnimationFrame(updateKeyboardControls);
@@ -772,42 +802,98 @@ function loadSettings() {
     }
 }
 
-// Online multiplayer (WebSocket - simplified implementation)
+// Online multiplayer (WebSocket implementation)
+function setupSocketHandlers() {
+    if (!game.socket) return;
+    game.socket.onmessage = (evt) => {
+        try {
+            const msg = JSON.parse(evt.data);
+            if (msg.type === 'created') {
+                document.getElementById('room-status').innerHTML = `
+                    <p style="color: var(--neon-blue);">Room Created!</p>
+                    <p style="font-size: 1.5rem; color: var(--neon-pink); margin: 1rem 0;">${msg.roomCode}</p>
+                    <p style="color: var(--neon-orange);">Waiting for opponent...</p>
+                `;
+            } else if (msg.type === 'joined') {
+                document.getElementById('room-status').innerHTML = `
+                    <p style="color: var(--neon-blue);">Joined room ${msg.roomCode}</p>
+                    <p style="color: var(--neon-orange);">Waiting for host to start...</p>
+                `;
+            } else if (msg.type === 'start') {
+                document.getElementById('room-status').innerHTML = `
+                    <p style="color: var(--neon-blue);">Connected!</p>
+                    <p style="color: var(--neon-purple);">Game starting...</p>
+                `;
+                startGame('online', 'classic');
+            } else if (msg.type === 'state' && game.mode === 'online' && !game.isHost) {
+                const st = msg.state;
+                if (st.ball) { game.ball.x = st.ball.x; game.ball.y = st.ball.y; }
+                if (st.paddles) {
+                    if (st.paddles.p1) game.paddle1.y = st.paddles.p1.y;
+                    if (st.paddles.p2) game.paddle2.y = st.paddles.p2.y;
+                }
+                if (st.scores) {
+                    game.score1 = st.scores.s1;
+                    game.score2 = st.scores.s2;
+                    updateScore();
+                }
+            } else if (msg.type === 'input' && game.mode === 'online' && game.isHost) {
+                if (msg.input === 'up') game.paddle2.moveUp();
+                else if (msg.input === 'down') game.paddle2.moveDown();
+            } else if (msg.type === 'error') {
+                document.getElementById('room-status').innerHTML = `
+                    <p style="color: var(--neon-orange);">${msg.message}</p>
+                `;
+            }
+        } catch (e) {
+            // ignore malformed messages
+        }
+    };
+}
+
+function connectSocket(roomCode, isHost) {
+    try {
+        game.socket = new WebSocket('ws://localhost:8080');
+        game.socket.onopen = () => {
+            const payload = isHost ? { type: 'create', roomCode } : { type: 'join', roomCode };
+            try { game.socket.send(JSON.stringify(payload)); } catch (e) {}
+            setupSocketHandlers();
+        };
+        game.socket.onerror = () => {
+            document.getElementById('room-status').innerHTML = `
+                <p style="color: var(--neon-orange);">Unable to connect to server.</p>
+                <p style="color: var(--neon-purple);">Start the WebSocket server and retry.</p>
+            `;
+        };
+        game.socket.onclose = () => {
+            // Optionally inform user
+        };
+    } catch (e) {
+        document.getElementById('room-status').innerHTML = `
+            <p style="color: var(--neon-orange);">WebSocket not supported or blocked.</p>
+        `;
+    }
+}
+
 function createRoom() {
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     game.roomCode = roomCode;
     game.isHost = true;
-    
     document.getElementById('room-status').innerHTML = `
-        <p style="color: var(--neon-blue);">Room Created!</p>
-        <p style="font-size: 1.5rem; color: var(--neon-pink); margin: 1rem 0;">${roomCode}</p>
-        <p style="color: var(--neon-orange);">Waiting for opponent...</p>
+        <p style="color: var(--neon-blue);">Creating room...</p>
     `;
-    
-    // In a real implementation, this would connect to a WebSocket server
-    // For now, this is a placeholder
-    console.log('Room created:', roomCode);
+    connectSocket(roomCode, true);
 }
 
 function joinRoom() {
     const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
     if (!roomCode) return;
-    
     game.roomCode = roomCode;
     game.isHost = false;
-    
     document.getElementById('room-status').innerHTML = `
         <p style="color: var(--neon-blue);">Connecting to room ${roomCode}...</p>
     `;
-    
-    // In a real implementation, this would connect to a WebSocket server
-    // For now, show a message with simulated delay
-    setTimeout(() => {
-        document.getElementById('room-status').innerHTML = `
-            <p style="color: var(--neon-orange);">Online multiplayer requires a WebSocket server.</p>
-            <p style="color: var(--neon-purple); margin-top: 0.5rem;">Try Local Multiplayer instead!</p>
-        `;
-    }, GAME_CONSTANTS.ONLINE_CONNECTION_DELAY);
+    connectSocket(roomCode, false);
 }
 
 // Initialize on load

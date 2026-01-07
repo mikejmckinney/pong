@@ -23,8 +23,8 @@ A web-based Pong game optimized for mobile devices with a retro arcade aesthetic
 ### Controls
 
 #### Desktop
-- **Player 1**: W (up) / S (down)
-- **Player 2**: Arrow Up / Arrow Down (local multiplayer only)
+- **Player 1**: W/S or Arrow Up/Down (single player & online)
+- **Player 2**: Arrow Up/Down (local multiplayer only)
 - **Pause**: ESC or Pause button
 
 #### Mobile
@@ -92,11 +92,31 @@ Modify CSS custom properties in `styles.css`:
 
 ## Online Multiplayer Setup
 
-The game includes a placeholder for online multiplayer. To implement:
+This repo now includes a minimal WebSocket server for online play.
 
-1. Set up a WebSocket server (e.g., using Socket.io)
-2. Update the `createRoom()` and `joinRoom()` functions in `game.js`
-3. Implement game state synchronization between clients
+### Quick Start
+1. Install Node.js dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the WebSocket server (port 8080):
+   ```bash
+   npm run start:server
+   # or
+   node server.js
+   ```
+3. Serve the game statically (port 8000):
+   ```bash
+   python3 -m http.server 8000
+   ```
+4. Open http://localhost:8000 and select Online Multiplayer.
+5. Host clicks Create Room and shares the 6-letter code.
+6. Guest enters the code and joins; the game starts automatically.
+
+### Notes
+- Host simulates physics and streams state; guest sends inputs.
+- For remote play across machines, ensure port 8080 is reachable and update the client URL to your host IP in `connectSocket()`.
+- Arrow keys now also control Player 1 in single player and online modes.
 
 ## Browser Support
 
